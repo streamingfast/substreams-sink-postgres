@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"math/big"
 	"reflect"
 	"sort"
@@ -169,11 +170,15 @@ func convertOpToClickhouseValues(o *Operation) ([]any, error) {
 	sort.Strings(columns)
 	values := make([]any, len(o.data))
 	for i, v := range columns {
-		convertedType, err := convertToType(o.data[v], o.table.columnsByName[v].scanType)
-		if err != nil {
-			return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], o.table.columnsByName[v].scanType, v, err)
+		if col, exists := o.table.columnsByName[v]; exists {
+			convertedType, err := convertToType(o.data[v], col.scanType)
+			if err != nil {
+				return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], o.table.columnsByName[v].scanType, v, err)
+			}
+			values[i] = convertedType
+		} else {
+			return nil, fmt.Errorf("cannot find column %q for table %q (valid columns are %q)", v, o.table.identifier, strings.Join(maps.Keys(o.table.columnsByName), ", "))
 		}
-		values[i] = convertedType
 	}
 	return values, nil
 }
