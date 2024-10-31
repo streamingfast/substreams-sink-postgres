@@ -17,11 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	HISTORICAL_BLOCK_FLUSH_EACH = 1000
-	LIVE_BLOCK_FLUSH_EACH       = 1
-)
-
 type SQLSinker struct {
 	*shutter.Shutter
 	*sink.Sinker
@@ -121,8 +116,13 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 		}
 	}
 
-	if data.Clock.Number%s.batchBlockModulo(isLive) == 0 {
-		s.logger.Debug("flushing to database", zap.Stringer("block", cursor.Block()), zap.Bool("is_live", *isLive))
+	if (s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0) || s.loader.FlushNeeded() {
+		s.logger.Debug("flushing to database",
+			zap.Stringer("block", cursor.Block()),
+			zap.Bool("is_live", *isLive),
+			zap.Bool("block_flush_interval_reached", s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0),
+			zap.Bool("row_flush_interval_reached", s.loader.FlushNeeded()),
+		)
 
 		flushStart := time.Now()
 		rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), cursor, data.FinalBlockHeight)
@@ -219,12 +219,12 @@ func (s *SQLSinker) batchBlockModulo(isLive *bool) uint64 {
 	}
 
 	if *isLive {
-		return LIVE_BLOCK_FLUSH_EACH
+		return uint64(s.loader.LiveBlockFlushInterval())
 	}
 
-	if s.loader.FlushInterval() > 0 {
-		return uint64(s.loader.FlushInterval())
+	if s.loader.BatchBlockFlushInterval() > 0 {
+		return uint64(s.loader.BatchBlockFlushInterval())
 	}
 
-	return HISTORICAL_BLOCK_FLUSH_EACH
+	return 0
 }
