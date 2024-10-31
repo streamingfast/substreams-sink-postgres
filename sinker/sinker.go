@@ -27,8 +27,8 @@ type SQLSinker struct {
 	logger *zap.Logger
 	tracer logging.Tracer
 
-	lastCursor     *sink.Cursor
-	lastFinalBlock uint64
+	lastSeenCursor     *sink.Cursor
+	lastSeenFinalBlock uint64
 
 	stats *Stats
 }
@@ -125,8 +125,8 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 		}
 	}
 
-	s.lastCursor = cursor
-	s.lastFinalBlock = data.FinalBlockHeight
+	s.lastSeenCursor = cursor
+	s.lastSeenFinalBlock = data.FinalBlockHeight
 
 	if (s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0) || s.loader.FlushNeeded() {
 		s.logger.Debug("flushing to database",
@@ -144,14 +144,14 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 func (s *SQLSinker) flush(ctx context.Context) error {
 
 	// we haven't received any data yet, so nothing to do here
-	if s.lastCursor == nil {
+	if s.lastSeenCursor == nil {
 		return nil
 	}
 
 	flushStart := time.Now()
-	rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), s.lastCursor, s.lastFinalBlock)
+	rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), s.lastSeenCursor, s.lastSeenFinalBlock)
 	if err != nil {
-		return fmt.Errorf("failed to flush at block %s: %w", s.lastCursor.Block(), err)
+		return fmt.Errorf("failed to flush at block %s: %w", s.lastSeenCursor.Block(), err)
 	}
 
 	flushDuration := time.Since(flushStart)
@@ -168,7 +168,7 @@ func (s *SQLSinker) flush(ctx context.Context) error {
 	FlushedRowsCount.AddInt(rowFlushedCount)
 	FlushDuration.AddInt64(flushDuration.Nanoseconds())
 
-	s.stats.RecordBlock(s.lastCursor.Block())
+	s.stats.RecordBlock(s.lastSeenCursor.Block())
 	s.stats.RecordFlushDuration(flushDuration)
 
 	return nil
