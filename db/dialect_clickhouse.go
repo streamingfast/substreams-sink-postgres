@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"math/big"
 	"reflect"
 	"sort"
@@ -12,10 +11,10 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-
 	"github.com/streamingfast/cli"
 	sink "github.com/streamingfast/substreams-sink"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 )
 
 type clickhouseDialect struct{}
@@ -173,7 +172,7 @@ func convertOpToClickhouseValues(o *Operation) ([]any, error) {
 		if col, exists := o.table.columnsByName[v]; exists {
 			convertedType, err := convertToType(o.data[v], col.scanType)
 			if err != nil {
-				return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], o.table.columnsByName[v].scanType, v, err)
+				return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], col.scanType, v, err)
 			}
 			values[i] = convertedType
 		} else {
