@@ -231,6 +231,14 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 			var err error
 			if strings.Contains(value, "T") && strings.HasSuffix(value, "Z") {
 				v, err = time.Parse("2006-01-02T15:04:05Z", value)
+			} else if dateRegex.MatchString(value) {
+				// This is a Clickhouse Date field. The Clickhouse Go client doesn't convert unix timestamp into Date,
+				// so we just validate the format here and return a string.
+				_, err = time.Parse("2006-01-02", value)
+				if err != nil {
+					return "", fmt.Errorf("could not convert %s to date: %w", value, err)
+				}
+				return value, nil
 			} else {
 				v, err = time.Parse("2006-01-02 15:04:05", value)
 			}
