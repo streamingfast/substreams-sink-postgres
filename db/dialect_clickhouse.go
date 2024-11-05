@@ -247,7 +247,20 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 			newInt.SetString(value, 10)
 			return newInt, nil
 		}
-		return "", fmt.Errorf("unsupported pointer type %s", valueType)
+
+		elemType := valueType.Elem()
+		val, err := convertToType(value, elemType)
+		if err != nil {
+			return nil, fmt.Errorf("invalid pointer type: %w", err)
+		}
+
+		// We cannot just return &val here as this will return an *interface{} that the Clickhouse Go client won't be
+		// able to convert on inserting. Instead, we create a new variable using the type that valueType has been
+		// pointing to, assign the converted value from convertToType to that and then return a pointer to the new variable.
+		result := reflect.New(elemType).Elem()
+		result.Set(reflect.ValueOf(val))
+		return result.Addr().Interface(), nil
+
 	default:
 		return value, nil
 	}
