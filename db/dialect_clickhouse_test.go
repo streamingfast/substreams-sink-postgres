@@ -44,6 +44,31 @@ func Test_convertToType(t *testing.T) {
 			expectErr: nil,
 			valueType: reflect.TypeOf(time.Time{}),
 		},
+		{
+			name:      "String Slice Double Quoted",
+			value:     `["field1", "field2"]`,
+			expect:    []string{"field1", "field2"},
+			expectErr: nil,
+			valueType: reflect.TypeOf([]string{}),
+		}, {
+			name:      "Int Slice",
+			value:     `[1, 2]`,
+			expect:    []int{1, 2},
+			expectErr: nil,
+			valueType: reflect.TypeOf([]int{}),
+		}, {
+			name:      "Float Slice",
+			value:     `[1.0, 2.0]`,
+			expect:    []float64{1, 2},
+			expectErr: nil,
+			valueType: reflect.TypeOf([]float64{}),
+		}, {
+			name:      "Invalid Type Slice Struct",
+			value:     `[""]`,
+			expect:    nil,
+			expectErr: errors.New(`"Time" is not supported as Clickhouse Array type`),
+			valueType: reflect.TypeOf([]time.Time{}),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

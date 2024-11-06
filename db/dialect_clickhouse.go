@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -187,7 +188,19 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 	case reflect.String:
 		return value, nil
 	case reflect.Slice:
-		return value, nil
+		if valueType.Elem().Kind() == reflect.Struct || valueType.Elem().Kind() == reflect.Ptr {
+			return nil, fmt.Errorf("%q is not supported as Clickhouse Array type", valueType.Elem().Name())
+		}
+
+		// in case the slice values are wrapped in single quotes, replace them to use json.Unmarshal which requires double quotes
+		value = strings.ReplaceAll(value, "'", "\"")
+
+		res := reflect.New(reflect.SliceOf(valueType.Elem()))
+		if err := json.Unmarshal([]byte(value), res.Interface()); err != nil {
+			return "", fmt.Errorf("could not unmarshal slice value %q: %w", value, err)
+		}
+
+		return res.Elem().Interface(), nil
 	case reflect.Bool:
 		return strconv.ParseBool(value)
 	case reflect.Int:
