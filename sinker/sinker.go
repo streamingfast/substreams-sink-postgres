@@ -121,7 +121,7 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 		}
 	}
 
-	if data.Clock.Number%s.batchBlockModulo(data, isLive) == 0 {
+	if data.Clock.Number%s.batchBlockModulo(isLive) == 0 {
 		s.logger.Debug("flushing to database", zap.Stringer("block", cursor.Block()), zap.Bool("is_live", *isLive))
 
 		flushStart := time.Now()
@@ -213,7 +213,7 @@ func (s *SQLSinker) HandleBlockUndoSignal(ctx context.Context, data *pbsubstream
 	return s.loader.Revert(ctx, s.OutputModuleHash(), cursor, data.LastValidBlock.Number)
 }
 
-func (s *SQLSinker) batchBlockModulo(blockData *pbsubstreamsrpc.BlockScopedData, isLive *bool) uint64 {
+func (s *SQLSinker) batchBlockModulo(isLive *bool) uint64 {
 	if isLive == nil {
 		panic(fmt.Errorf("liveness checker has been disabled on the Sinker instance, this is invalid in the context of 'substreams-sink-sql'"))
 	}
