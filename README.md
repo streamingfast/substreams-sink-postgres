@@ -38,7 +38,7 @@ The Substreams:SQL sink helps you quickly and easily sync Substreams modules to 
    **Clickhouse**
 
    ```bash
-   export DSN="clickhouse://default:default@localhost:9000/default"
+   export DSN="clickhouse://default:@localhost:9000/default"
    substreams-sink-sql setup $DSN docs/tutorial/substreams.yaml
    ```
 
