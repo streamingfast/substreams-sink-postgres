@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+* Added a check for non-existent columns in Clickhouse
+
 * Added support for `Nullable` types in Clickhouse.
 
 ## v4.2.2
