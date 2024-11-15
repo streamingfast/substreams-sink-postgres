@@ -7,3 +7,4 @@ dist/
 devel/data*
 build/
 *.spkg
+/substreams-sink-sql

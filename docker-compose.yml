@@ -1,7 +1,8 @@
 version: "3"
+
 services:
   postgres:
-    container_name: postgres-ssp
+    container_name: postgres-ssp2
     image: postgres:14
     ports:
       - "5432:5432"
@@ -21,7 +22,7 @@ services:
       timeout: 10s
       retries: 15
   pgweb:
-    container_name: pgweb-ssp
+    container_name: pgweb-ssp2
     image: sosedoff/pgweb:0.11.12
     restart: on-failure
     ports:

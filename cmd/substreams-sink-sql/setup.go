@@ -36,12 +36,12 @@ func sinkSetupE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("setup manifest reader: %w", err)
 	}
-	pkg, _, err := reader.Read()
+	pkgBundle, err := reader.Read()
 	if err != nil {
 		return fmt.Errorf("read manifest: %w", err)
 	}
 
-	sinkConfig, err := extractSinkConfig(pkg)
+	sinkConfig, err := extractSinkConfig(pkgBundle.Package)
 	if err != nil {
 		return fmt.Errorf("extract sink config: %w", err)
 	}

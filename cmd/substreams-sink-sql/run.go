@@ -55,11 +55,11 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("setup manifest reader: %w", err)
 			}
-			pkg, _, err := reader.Read()
+			pkgBundle, err := reader.Read()
 			if err != nil {
 				return fmt.Errorf("read manifest: %w", err)
 			}
-			network = pkg.Network
+			network = pkgBundle.Package.Network
 		}
 		var err error
 		endpoint, err = manifest.ExtractNetworkEndpoint(network, sflags.MustGetString(cmd, "endpoint"), zlog)

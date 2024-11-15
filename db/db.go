@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const CURSORS_TABLE = "cursors"
-const HISTORY_TABLE = "substreams_history"
+var CURSORS_TABLE = "cursors"
+var HISTORY_TABLE = "substreams_history"
 
 // Make the typing a bit easier
 type OrderedMap[K comparable, V any] struct {

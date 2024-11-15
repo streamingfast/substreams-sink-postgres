@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+* Added support for `Nullable` types in Clickhouse.
+
+## v4.2.2
+
+* Fix major bug when receiving empty `MapOutput`
+
+## v4.2.1
+
+* Bump substreams to v1.10.3 to support new manifest data like `protobuf:excludePaths`
+
+## v4.2.0
+
+* Added the --cursor-table and --history-table flags to allow running to sinks on the same database (be careful that you have no collision in table names)
+* bumped substreams to v1.8.2, add some default network endpoints
+
+## v4.1.0
+
+* Bumped substreams to v1.7.3
+* Enable gzip compression on substreams data on the wire
+
+## v4.0.3
+
+* Fix another case where 'infinite-retry' would not work and the program would stop on an error.
+* Enable multiple Substreams authentication methods (API key, JWT), using flags `--api-key-envvar` and `--api-token-envvar`.
+* Deprecates the use of `SF_API_TOKEN` environment variable, now use default `SUBSTREAMS_API_TOKEN` or set your own using `--api-token-envvar`.
+
 ## v4.0.2
 
 * Fixed spurious error reporting when the sinker is terminating or has been canceled.

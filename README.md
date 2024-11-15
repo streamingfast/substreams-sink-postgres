@@ -1,7 +1,6 @@
-# Substreams Sink SQL
+# Substreams:SQL Sink
 
-The Substreams:SQL sink helps you quickly and easily sync Substreams modules to
-a PostgreSQL or Clickhouse database.
+The Substreams:SQL sink helps you quickly and easily sync Substreams modules to a PostgreSQL or Clickhouse database.
 
 ### Quickstart
 
@@ -19,60 +18,61 @@ a PostgreSQL or Clickhouse database.
 
    This creates the following WASM file: `target/wasm32-unknown-unknown/release/substreams_postgresql_sink_tutorial.wasm`
 
-1. Observe the "Sink Config" section of the [substreams manifest in the tutorial](docs/tutorial/substreams.yaml), changing the DSN if needed.
-
-   ```yaml
-   sink:
-     module: blockmeta:db_out
-     type: sf.substreams.sink.sql.v1.Service
-     config:
-       schema: "./schema.sql"
-   ```
-
 1. Start Docker Compose in the background:
 
-   > **Note** Feel free to skip this step if you already have a running Postgres instance accessible
-
    ```bash
-   # from the root of this repository
-   rm -rf ./devel/data/postgres # clean up previous data
-   docker-compose up -d
+   docker compose up -d
    ```
 
-   > **Note** You now have a postgres instance accessible at `postgres://dev-node:insecure-change-me-in-prod@postgres:5432/dev-node?sslmode=disable` > **Note** You also have a clickhouse instance accessible at `clickhouse://default:default@localhost:9000/default`
+   > You can wipe the database and restart from scratch by doing `docker compose down` and `rm -rf ./devel/data/postgres`.
 
 1. Run the setup command:
 
+   **Postgres**
+
    ```bash
-   # the passwords come from the default config in `docker-compose.yml`
    export DSN="postgres://dev-node:insecure-change-me-in-prod@localhost:5432/dev-node?sslmode=disable"
-   #export DSN="clickhouse://default:@localhost:9000/default"
+   substreams-sink-sql setup $DSN docs/tutorial/substreams.yaml
+   ```
+
+   **Clickhouse**
+
+   ```bash
+   export DSN="clickhouse://default:@localhost:9000/default"
    substreams-sink-sql setup $DSN docs/tutorial/substreams.yaml
    ```
 
    This will connect to the database and create the schema, using the values from `sink.config.schema`
 
-   > **Note** For the sake of idempotency, we recommend that the schema file only contain `create (...) if not exists` statements.
+   > **Note** For the sake of idempotence, we recommend that the schema file only contain `create (...) if not exists` statements.
 
 1. Run the sink
 
-   Now that the code is compiled and the databse is set up, let launch the `sink` process.
+   Now that the code is compiled and the database is set up, let launch the `sink` process.
 
    > **Note** To connect to Substreams you will need an authentication token, follow this [guide](https://substreams.streamingfast.io/reference-and-specs/authentication) to obtain one.
-   > **Note** This will connect to the `mainnet.eth.streamingfast.io:443` endpoint, because it is the default endpoint for the `mainnet` network, defined in `docs/tutorial/substreams.yaml`. You can change this either by using the endpoint flag `-e another.endpoint:443` or by setting the environment variable `SUBSTREAMS_ENDPOINTS_CONFIG_MAINNET` to that endpoint. The last part of the environment variable is the name of the network in the manifest, in uppercase.
 
    ```shell
-   substreams-sink-sql run \
-       $DSN \
-       docs/tutorial/substreams.yaml
+   substreams-sink-sql run $DSN docs/tutorial/substreams.yaml
    ```
 
-1. Tear down your Docker Compose cluster
+### Sink Config
 
-   ```bash
-   # from the root of this repository
-   docker-compose down
-   ```
+Observe the "Sink Config" section of the [Substreams manifest in the tutorial](docs/tutorial/substreams.yaml#L39-L49):
+
+```yaml
+sink:
+   module: db_out
+   type: sf.substreams.sink.sql.v1.Service
+   config:
+      schema: "./schema.sql"
+```
+
+This is used by `substreams-sink-sql` to gather all required information about how to run and configure the sink, namely the output `module`, what service is desired, `sf.substreams.sink.sql.v1.Service` here and the config that in case of Substreams:SQL contains the schema file to populate the database on `substreams-sink-sql setup` step.
+
+### Network
+
+The [Substreams manifest in the tutorial](docs/tutorial/substreams.yaml#L37) defines on which network by default this is going to run.   This will connect to the `mainnet.eth.streamingfast.io:443` endpoint, because it is the default endpoint for the `mainnet` network. You can change this either by using the endpoint flag `-e another.endpoint:443` or by setting the environment variable `SUBSTREAMS_ENDPOINTS_CONFIG_MAINNET` to that endpoint. The last part of the environment variable is the name of the network in the manifest, in uppercase.
 
 ### DSN
 

@@ -187,12 +187,12 @@ func (d postgresDialect) GetCreateCursorQuery(schema string, withPostgraphile bo
 	out := fmt.Sprintf(cli.Dedent(`
 		create table if not exists %s.%s
 		(
-			id         text not null constraint cursor_pk primary key,
+			id         text not null constraint %s primary key,
 			cursor     text,
 			block_num  bigint,
 			block_id   text
 		);
-		`), EscapeIdentifier(schema), EscapeIdentifier(CURSORS_TABLE))
+		`), EscapeIdentifier(schema), EscapeIdentifier(CURSORS_TABLE), EscapeIdentifier(CURSORS_TABLE+"_pk"))
 	if withPostgraphile {
 		out += fmt.Sprintf("COMMENT ON TABLE %s.%s IS E'@omit';",
 			EscapeIdentifier(schema), EscapeIdentifier(CURSORS_TABLE))
@@ -270,7 +270,7 @@ func (d postgresDialect) CreateUser(tx Tx, ctx context.Context, l *Loader, usern
 }
 
 func (d postgresDialect) historyTable(schema string) string {
-	return fmt.Sprintf("%s.%s", EscapeIdentifier(schema), EscapeIdentifier("substreams_history"))
+	return fmt.Sprintf("%s.%s", EscapeIdentifier(schema), EscapeIdentifier(HISTORY_TABLE))
 }
 
 func (d postgresDialect) saveInsert(schema string, table string, primaryKey map[string]string, blockNum uint64) string {
