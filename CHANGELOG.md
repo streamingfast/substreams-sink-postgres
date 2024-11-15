@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Added support for `Nullable` types in Clickhouse.
 
+## v4.2.2
+
+* Fix major bug when receiving empty `MapOutput`
+
 ## v4.2.1
 
 * Bump substreams to v1.10.3 to support new manifest data like `protobuf:excludePaths`
