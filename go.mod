@@ -25,8 +25,6 @@ require (
 	google.golang.org/protobuf v1.33.0
 )
 
-replace github.com/streamingfast/substreams-sink => ../substreams-sink
-
 require (
 	buf.build/gen/go/bufbuild/reflect/connectrpc/go v1.16.1-20240117202343-bf8f65e8876c.1 // indirect
 	buf.build/gen/go/bufbuild/reflect/protocolbuffers/go v1.33.0-20240117202343-bf8f65e8876c.1 // indirect
