@@ -11,10 +11,10 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
-
 	"github.com/streamingfast/cli"
 	sink "github.com/streamingfast/substreams-sink"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 )
 
 type clickhouseDialect struct{}
@@ -169,11 +169,15 @@ func convertOpToClickhouseValues(o *Operation) ([]any, error) {
 	sort.Strings(columns)
 	values := make([]any, len(o.data))
 	for i, v := range columns {
-		convertedType, err := convertToType(o.data[v], o.table.columnsByName[v].scanType)
-		if err != nil {
-			return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], o.table.columnsByName[v].scanType, v, err)
+		if col, exists := o.table.columnsByName[v]; exists {
+			convertedType, err := convertToType(o.data[v], col.scanType)
+			if err != nil {
+				return nil, fmt.Errorf("converting value %q to type %q in column %q: %w", o.data[v], col.scanType, v, err)
+			}
+			values[i] = convertedType
+		} else {
+			return nil, fmt.Errorf("cannot find column %q for table %q (valid columns are %q)", v, o.table.identifier, strings.Join(maps.Keys(o.table.columnsByName), ", "))
 		}
-		values[i] = convertedType
 	}
 	return values, nil
 }
@@ -255,7 +259,20 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 			newInt.SetString(value, 10)
 			return newInt, nil
 		}
-		return "", fmt.Errorf("unsupported pointer type %s", valueType)
+
+		elemType := valueType.Elem()
+		val, err := convertToType(value, elemType)
+		if err != nil {
+			return nil, fmt.Errorf("invalid pointer type: %w", err)
+		}
+
+		// We cannot just return &val here as this will return an *interface{} that the Clickhouse Go client won't be
+		// able to convert on inserting. Instead, we create a new variable using the type that valueType has been
+		// pointing to, assign the converted value from convertToType to that and then return a pointer to the new variable.
+		result := reflect.New(elemType).Elem()
+		result.Set(reflect.ValueOf(val))
+		return result.Addr().Interface(), nil
+
 	default:
 		return value, nil
 	}

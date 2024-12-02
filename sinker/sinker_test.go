@@ -214,7 +214,7 @@ func TestInserts(t *testing.T) {
 				"testschema",
 				db.TestTables("testschema"),
 			)
-			s, err := sink.New(sink.SubstreamsModeDevelopment, testPackage, testPackage.Modules.Modules[0], []byte("unused"), testClientConfig, logger, nil)
+			s, err := sink.New(sink.SubstreamsModeDevelopment, false, testPackage, testPackage.Modules.Modules[0], []byte("unused"), testClientConfig, logger, nil)
 			require.NoError(t, err)
 			sinker, _ := New(s, l, logger, nil)
 

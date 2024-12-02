@@ -31,6 +31,7 @@ var sinkRunCmd = Command(sinkRunE,
 		flags.Int("flush-interval", 1000, "When in catch up mode, flush every N blocks")
 		flags.StringP("endpoint", "e", "", "Specify the substreams endpoint, ex: `mainnet.eth.streamingfast.io:443`")
 	}),
+	Example("substreams-sink-sql run 'postgres://localhost:5432/posgres?sslmode=disable' uniswap-v3@v0.2.10"),
 	OnCommandErrorLogAndExit(zlog),
 )
 

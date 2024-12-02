@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Added support for the Clickhouse `Date` type.
 
+## v4.3.0
+
+* Added a check for non-existent columns in Clickhouse
+* Added support for `Nullable` types in Clickhouse.
+* Bump substreams to `v0.11.1`
+* Bump substreams-sink to `v0.5.0`
+
+## v4.2.2
+
+* Fix major bug when receiving empty `MapOutput`
+
 ## v4.2.1
 
 * Bump substreams to v1.10.3 to support new manifest data like `protobuf:excludePaths`
@@ -85,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Protodefs v1.0.4
 
-* Added support for `rest_frontend` field with `enabled` boolean flag, aimed at this backend implementation: https://github.com/semiotic-ai/sql-wrapper
+* Added support for `rest_frontend` field with `enabled` boolean flag, aimed at this backend implementation: <https://github.com/semiotic-ai/sql-wrapper>
 
 ## v3.0.5
 
@@ -119,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Highlights
 
-This release brings a major refactoring enabling support for multiple database drivers and not just Postgres anymore. Our first newly supported driver is [Clickhouse](https://clickhouse.com/#getting_started) which defines itself as _The fastest and most resource efficient open-source database for real-time apps and analytics_. In the future, further database driver could be supported like MySQL, MSSQL and any other that can talk the SQL protocol.
+This release brings a major refactoring enabling support for multiple database drivers and not just Postgres anymore. Our first newly supported driver is [Clickhouse](https://clickhouse.com/#getting_started) which defines itself as *The fastest and most resource efficient open-source database for real-time apps and analytics*. In the future, further database driver could be supported like MySQL, MSSQL and any other that can talk the SQL protocol.
 
 Now that we support multiple driver, keeping the `substreams-sink-postgres` didn't make sense anymore. As such, we have renamed the project from `substreams-sink-postgresql` to `substreams-sink-sql` since it now supports Clickhouse out of the box. The binary and Go modules have been renamed in consequence.
 
@@ -205,8 +216,8 @@ Similar changes have been applied to other commands as well.
 
   You can connect to Clickhouse by using the following DSN:
 
-  - Not encrypted: `clickhouse://<host>:9000/<database>?username=<user>&password=<password>`
-  - Encrypted: `clickhouse://<host>:9440/<database>?secure=true&skip_verify=true&username=<user>&password=<password>`
+  * Not encrypted: `clickhouse://<host>:9000/<database>?username=<user>&password=<password>`
+  * Encrypted: `clickhouse://<host>:9440/<database>?secure=true&skip_verify=true&username=<user>&password=<password>`
 
   If you want to send custom args to the connection, you can use by sending as query params.
 
@@ -262,8 +273,8 @@ See the [High Throughput Injection section](https://github.com/streamingfast/sub
 * Added newer method of populating the database via CSV (thanks [@gusinacio](https://github.com/gusinacio)!).
 
   Newer commands:
-    - `generate-csv`: Generates CSVs for each table
-    - `inject-csv`: Injects generated CSV rows for `<table>`
+  * `generate-csv`: Generates CSVs for each table
+  * `inject-csv`: Injects generated CSV rows for `<table>`
 
 ## v2.4.0
 
@@ -315,7 +326,7 @@ See the [High Throughput Injection section](https://github.com/streamingfast/sub
 
 ### Changed
 
-* Now using Go Protobuf generate bindings from https://github.com/streamingfast/substreams-sink-database-changes.
+* Now using Go Protobuf generate bindings from <https://github.com/streamingfast/substreams-sink-database-changes>.
 
 ## v2.3.0
 
@@ -363,9 +374,9 @@ This silent behavior is problematic because it could seen like the cursor was lo
 
 This release brings in a new flag `substreams-sink-postgres run --on-module-hash-mistmatch=error` (default value shown) where it would control how we should react to a changes in the module's hash since last run.
 
-- If `error` is used (default), it will exit with an error explaining the problem and how to fix it.
-- If `warn` is used, it does the same as 'ignore' but it will log a warning message when it happens.
-- If `ignore` is set, we pick the cursor at the highest block number and use it as the starting point. Subsequent updates to the cursor will overwrite the module hash in the database.
+* If `error` is used (default), it will exit with an error explaining the problem and how to fix it.
+* If `warn` is used, it does the same as 'ignore' but it will log a warning message when it happens.
+* If `ignore` is set, we pick the cursor at the highest block number and use it as the starting point. Subsequent updates to the cursor will overwrite the module hash in the database.
 
 There is a possibility that multiple cursors exists in your database, hence why we pick the one with the highest block. If it's the case, you will be warned that multiple cursors exists. You can run `substreams-sink-postgres tools cursor cleanup <manifest> <module> --dsn=<dsn>` which will delete now useless cursors.
 
@@ -407,19 +418,19 @@ The `ignore` value can be used to change to a new `.spkg` while retaining the pr
 
 ### Changed
 
-- Diminish amount of allocations done to perform fields transformation.
+* Diminish amount of allocations done to perform fields transformation.
 
 ### Fixed
 
-- Fixed some places where escaping for either identifier or value was not done properly.
+* Fixed some places where escaping for either identifier or value was not done properly.
 
-- Fixed double escaping of boolean values.
+* Fixed double escaping of boolean values.
 
 ## v2.0.1
 
 ### Added
 
-- Added proper escaping for table & column names to allow keyword column names to use keywords as column names such as `to` and `from` etc.
+* Added proper escaping for table & column names to allow keyword column names to use keywords as column names such as `to` and `from` etc.
 
 ## v2.0.0
 
@@ -441,18 +452,17 @@ If you were using environment variable to configure the binary, note that the en
 
 ### Changed
 
-- **Deprecated** The flag `--irreversible-only` is deprecated, use `--final-blocks-only` instead.
+* **Deprecated** The flag `--irreversible-only` is deprecated, use `--final-blocks-only` instead.
 
 ### Added
 
+* Added command `substreams-sink-postgres tools --dsn <dsn> cursor read` to read the current cursors stored in your database.
 
-- Added command `substreams-sink-postgres tools --dsn <dsn> cursor read` to read the current cursors stored in your database.
-
-- **Dangerous** Added command `substreams-sink-postgres tools --dsn <dsn> cursor write <module_hash> <cursor>` to update the cursor in your database for the given `<module_hash>`
+* **Dangerous** Added command `substreams-sink-postgres tools --dsn <dsn> cursor write <module_hash> <cursor>` to update the cursor in your database for the given `<module_hash>`
 
     > **Warning** This is a destructive operation, be sure you understand the consequences of updating the cursor.
 
-- **Dangerous** Added command `substreams-sink-postgres tools --dsn <dsn> cursor delete [<module_hash>|--all]` to delete the cursor associated with the given module's hash or all cursors if `--all` is used.
+* **Dangerous** Added command `substreams-sink-postgres tools --dsn <dsn> cursor delete [<module_hash>|--all]` to delete the cursor associated with the given module's hash or all cursors if `--all` is used.
 
     > **Warning** This is a destructive operation, be sure you understand the consequences of updating the cursor.
 
@@ -464,11 +474,10 @@ This is the latest release before upgrading to Substreams RPC v2.
 
 ### Added
 
-- Added `--infinite-retry` to never exit on error and retry indefinitely instead.
+* Added `--infinite-retry` to never exit on error and retry indefinitely instead.
 
-- Added `--development-mode` to run in development mode.
+* Added `--development-mode` to run in development mode.
 
     > **Warning** You should use that flag for testing purposes, development mode drastically reduce performance you get from the server.
 
-- Added `--irreversible-only` to only deal with final (irreversible) blocks.
-
+* Added `--irreversible-only` to only deal with final (irreversible) blocks.
