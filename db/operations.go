@@ -76,6 +76,7 @@ func (o *Operation) mergeData(newData map[string]string) error {
 }
 
 var integerRegex = regexp.MustCompile(`^\d+$`)
+var dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 var reflectTypeTime = reflect.TypeOf(time.Time{})
 
 func EscapeIdentifier(valueToEscape string) string {
