@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jimsmart/schema"
+	"github.com/roshaans/schema"
 	"github.com/streamingfast/logging"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.uber.org/zap"
@@ -134,11 +134,43 @@ func (l *Loader) FlushInterval() time.Duration {
 }
 
 func (l *Loader) LoadTables() error {
-	schemaTables, err := schema.Tables(l.DB)
+	// Step 1: Query the database to get all the table names in the specified schema
+	query := `
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = $1
+		AND (table_name = 'dex_trades' OR table_name = $2);
+	`
+	rows, err := l.DB.Query(query, l.schema, CURSORS_TABLE) // CURSORS_TABLE is a constant representing the 'cursors' table name
 	if err != nil {
-		return fmt.Errorf("retrieving table and schema: %w", err)
+		return fmt.Errorf("failed to query tables: %w", err)
+	}
+	defer rows.Close()
+
+	// Step 2: Build schemaTables manually from query result
+	schemaTables := make(map[[2]string][]*sql.ColumnType)
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return fmt.Errorf("failed to scan table name: %w", err)
+		}
+
+		// Fetch columns for the matched table
+		columns, err := l.DB.Query(fmt.Sprintf("SELECT * FROM %s.%s LIMIT 0", EscapeIdentifier(l.schema), EscapeIdentifier(tableName)))
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns for table %s: %w", tableName, err)
+		}
+		columnTypes, err := columns.ColumnTypes()
+		if err != nil {
+			return fmt.Errorf("failed to get column types for table %s: %w", tableName, err)
+		}
+		columns.Close()
+
+		// Add the table and its columns to the schemaTables map
+		schemaTables[[2]string{l.schema, tableName}] = columnTypes
 	}
 
+	// Step 3: Process the filtered tables
 	seenCursorTable := false
 	seenHistoryTable := false
 	for schemaTableName, columns := range schemaTables {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/roshaans/clickhouse-go/v2"
 	sink "github.com/streamingfast/substreams-sink"
 	"go.uber.org/zap"
 )
