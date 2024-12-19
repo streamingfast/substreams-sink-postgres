@@ -17,6 +17,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const BLOCK_FLUSH_INTERVAL_DISABLED = 0
+
 type SQLSinker struct {
 	*shutter.Shutter
 	*sink.Sinker
@@ -226,5 +228,5 @@ func (s *SQLSinker) batchBlockModulo(isLive *bool) uint64 {
 		return uint64(s.loader.BatchBlockFlushInterval())
 	}
 
-	return 0
+	return BLOCK_FLUSH_INTERVAL_DISABLED
 }
