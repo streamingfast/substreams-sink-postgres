@@ -145,6 +145,7 @@ func (l *Loader) LiveBlockFlushInterval() int {
 
 func (l *Loader) FlushNeeded() bool {
 	totalRows := 0
+	// todo keep a running count when inserting/deleting rows directly
 	for pair := l.entries.Oldest(); pair != nil; pair = pair.Next() {
 		totalRows += pair.Value.Len()
 	}
