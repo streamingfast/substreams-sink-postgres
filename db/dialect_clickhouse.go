@@ -192,12 +192,9 @@ func convertToType(value string, valueType reflect.Type) (any, error) {
 			return nil, fmt.Errorf("%q is not supported as Clickhouse Array type", valueType.Elem().Name())
 		}
 
-		// in case the slice values are wrapped in single quotes, replace them to use json.Unmarshal which requires double quotes
-		value = strings.ReplaceAll(value, "'", "\"")
-
 		res := reflect.New(reflect.SliceOf(valueType.Elem()))
 		if err := json.Unmarshal([]byte(value), res.Interface()); err != nil {
-			return "", fmt.Errorf("could not unmarshal slice value %q: %w", value, err)
+			return "", fmt.Errorf("could not JSON unmarshal slice value %q: %w", value, err)
 		}
 
 		return res.Elem().Interface(), nil
