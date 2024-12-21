@@ -132,6 +132,10 @@ func (d clickhouseDialect) OnlyInserts() bool {
 	return true
 }
 
+func (d clickhouseDialect) AllowPkDuplicates() bool {
+	return true
+}
+
 func (d clickhouseDialect) CreateUser(tx Tx, ctx context.Context, l *Loader, username string, password string, _database string, readOnly bool) error {
 	user, pass := EscapeIdentifier(username), escapeStringValue(password)
 

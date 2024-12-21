@@ -246,6 +246,10 @@ func (d postgresDialect) OnlyInserts() bool {
 	return false
 }
 
+func (d postgresDialect) AllowPkDuplicates() bool {
+	return false
+}
+
 func (d postgresDialect) CreateUser(tx Tx, ctx context.Context, l *Loader, username string, password string, database string, readOnly bool) error {
 	user, pass, db := EscapeIdentifier(username), password, EscapeIdentifier(database)
 	var q string
