@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 * Added support for the Clickhouse `Date` type.
+* Removed the check for duplicate primary keys on the Clickhouse dialect. This allows inserting multiple rows with the same primary key.
 
 ## v4.3.0
 

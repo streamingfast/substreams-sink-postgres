@@ -32,7 +32,7 @@ func (l *Loader) Insert(tableName string, primaryKey map[string]string, data map
 		l.entries.Set(tableName, entry)
 	}
 
-	if _, found := entry.Get(uniqueID); found {
+	if _, found := entry.Get(uniqueID); found && !l.getDialect().AllowPkDuplicates() {
 		return fmt.Errorf("attempting to insert in table %q a primary key %q, that is already scheduled for insertion, insert should only be called once for a given primary key", tableName, primaryKey)
 	}
 
