@@ -8,6 +8,12 @@ The Substreams:SQL sink helps you quickly and easily sync Substreams modules to 
 
    > **Note** Or install from source directly `go install github.com/streamingfast/substreams-sink-sql/cmd/substreams-sink-sql@latest`.
 
+Install from source:
+
+```bash
+make install
+```
+
 1. Compile the [Substreams](./docs/tutorial/substreams.yaml) tutorial project:
 
    ```bash
