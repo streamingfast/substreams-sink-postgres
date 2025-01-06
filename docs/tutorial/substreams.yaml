@@ -5,7 +5,7 @@ package:
 
 protobuf:
   files:
-    - block_meta.proto
+    - eth_block_meta.proto
   importPaths:
     - ./proto
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package eth.block_meta.v1;
+package eth_block_meta.v1;
 
 import "google/protobuf/timestamp.proto";
 

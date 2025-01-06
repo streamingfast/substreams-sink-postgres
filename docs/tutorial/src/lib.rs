@@ -2,7 +2,7 @@ mod block_timestamp;
 mod pb;
 
 use self::block_timestamp::BlockTimestamp;
-use pb::block_meta::BlockMeta;
+use pb::eth_block_meta::v1::BlockMeta;
 use substreams::store::{
     self, DeltaProto, StoreNew, StoreSetIfNotExists, StoreSetIfNotExistsProto,
 };
