@@ -17,8 +17,8 @@ jobs:
     if: "${{ !startsWith(github.event.head_commit.message, 'GitBook: [#') }}"
 
     outputs:
-      image: steps.meta.outputs.image
-      tags: steps.meta.outputs.tags
+      image: ${{ steps.meta.outputs.image }}
+      tags: ${{ steps.meta.outputs.tags }}
 
     permissions:
       contents: read
