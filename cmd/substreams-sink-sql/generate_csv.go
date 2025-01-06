@@ -45,10 +45,10 @@ var generateCsvCmd = Command(generateCsvE,
 			Amount of memory bytes to allocate to the buffered writer. If your data set is small enough that every is hold in memory, we are going to avoid
 			the local I/O operation(s) and upload accumulated content in memory directly to final storage location.
 
-			Ideally, you should set this as to about 80%% of RAM the process has access to. This will maximize amout of element in memory,
+			Ideally, you should set this as to about 80%% of RAM the process has access to. This will maximize amount of element in memory,
 			and reduce 'syscall' and I/O operations to write to the temporary file as we are buffering a lot of data.
 
-			This setting has probably the greatest impact on writting throughput.
+			This setting has probably the greatest impact on writing throughput.
 
 			Default value for the buffer is 4 MiB.
 		`))

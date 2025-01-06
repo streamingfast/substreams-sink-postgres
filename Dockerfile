@@ -1,15 +1,19 @@
-FROM ubuntu:20.04
+FROM --platform=$BUILDPLATFORM golang:1.23-bullseye AS build
+
+WORKDIR /src
+
+ARG TARGETOS TARGETARCH VERSION=dev
+
+RUN --mount=target=. \
+      --mount=type=cache,target=/root/.cache/go-build \
+      --mount=type=cache,target=/go/pkg \
+      GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-X \"main.version=$VERSION\"" -o /app/substreams-sink-sql ./cmd/substreams-sink-sql
+
+FROM ubuntu:22.04
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-       apt-get -y install -y \
-       ca-certificates libssl1.1 vim htop iotop sysstat \
-       dstat strace lsof curl jq tzdata && \
-       rm -rf /var/cache/apt /var/lib/apt/lists/*
+      apt-get -y install -y ca-certificates libssl3
 
-RUN rm /etc/localtime && ln -snf /usr/share/zoneinfo/America/Montreal /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
-
-ADD /substreams-sink-sql /app/substreams-sink-sql
-
-ENV PATH "$PATH:/app"
+COPY --from=build /app/substreams-sink-sql /app/substreams-sink-sql
 
 ENTRYPOINT ["/app/substreams-sink-sql"]

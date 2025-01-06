@@ -12,31 +12,23 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-vanilla:
-    runs-on: ubuntu-20.04
+  build-and-push-image:
+    runs-on: ubuntu-22.04
+    if: "${{ !startsWith(github.event.head_commit.message, 'GitBook: [#') }}"
+
+    outputs:
+      image: steps.meta.outputs.image
+      tags: steps.meta.outputs.tags
 
     permissions:
       contents: read
       packages: write
 
-    strategy:
-      matrix:
-        go-version: [1.20.x]
-
-    outputs:
-      tags: ${{ steps.meta.outputs.tags }}
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Set up Go cache
-        uses: actions/cache@v3
-        id: cache-go
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -45,18 +37,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Print branch name
-        id: extract_branch
-        shell: bash
-        run: |
-          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-          echo "##[set-output name=release_train;]$(echo ${GITHUB_REF#refs/heads/release/})"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-      - name: Build
-        run: go build -v -ldflags "-X main.version=${{ github.event.ref }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%MZ)" -o ./substreams-sink-sql ./cmd/substreams-sink-sql
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -64,29 +52,43 @@ jobs:
 
       - name: Generate docker tags/labels from github build context
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=tag
-            type=sha,prefix=,enable=true
+            type=sha,prefix=
             type=raw,enable=${{ github.ref == 'refs/heads/develop' }},value=develop
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.extract_branch.outputs.release_train }}
+            type=edge,branch=develop
           flavor: |
             latest=${{ startsWith(github.ref, 'refs/tags/') }}
 
+      - name: Extract version
+        id: extract-version
+        run: |
+          version=edge
+          commit_date="$(git show -s --format=%cI)"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            version=${GITHUB_REF#refs/tags/}
+          fi
+
+          echo "VERSION=$version (Commit ${GITHUB_SHA::7}, Commit Date $commit_date)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        uses: docker/build-push-action@v6
         with:
-          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.extract-version.outputs.VERSION }}
 
   slack-notifications:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [build-vanilla]
-    runs-on: ubuntu-20.04
+    needs: [build-and-push-image]
+    runs-on: ubuntu-22.04
     steps:
       - name: Slack notification
         env:
@@ -94,5 +96,5 @@ jobs:
         uses: Ilshidur/action-slack@2.0.2
         with:
           args: |
-            :done: *${{ github.repository }}* Success building docker images from ${{ github.ref_type }} _${{ github.ref_name }}_ (${{ github.actor }}) :sparkling_heart: ```${{ join(needs.build-vanilla.outputs.tags, ' ') }}
-            ${{ needs.build-bundle.outputs.image }}```
+            :done: *${{ github.repository }}* Success building docker images from ${{ github.ref_type }} _${{ github.ref_name }}_ (${{ github.actor }}) :sparkling_heart: ```${{ join(needs.build-and-push-image.outputs.tags, ' ') }}
+            ${{ needs.build-and-push-image.outputs.image }}```
