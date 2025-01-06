@@ -145,7 +145,7 @@ func toolsDeleteCursorE(cmd *cobra.Command, args []string) error {
 
 func toolsCreateLoader() *db.Loader {
 	dsn := viper.GetString("tools-global-dsn")
-	loader, err := db.NewLoader(dsn, 0, db.OnModuleHashMismatchIgnore, nil, zlog, tracer)
+	loader, err := db.NewLoader(dsn, 0, 0, 0, db.OnModuleHashMismatchIgnore, nil, zlog, tracer)
 	cli.NoError(err, "Unable to instantiate database manager from DSN %q", dsn)
 
 	if err := loader.LoadTables(); err != nil {

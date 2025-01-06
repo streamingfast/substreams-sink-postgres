@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v4.4.0
 
 * Added support for the Clickhouse `Date` type.
+* Added more flags to configure flushing intervals. Available flags are `batch-block-flush-interval`, `batch-row-flush-interval` and `live-block-flush-interval`.
+* Deprecated the existing `flush-interval` flag in favor of `batch-block-flush-interval`.
 
 * Fixed handling of the Clickhouse `Array` type.
 

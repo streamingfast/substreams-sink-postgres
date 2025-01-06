@@ -15,7 +15,7 @@ func NewTestLoader(
 	tables map[string]*TableInfo,
 ) (*Loader, *TestTx) {
 
-	loader, err := NewLoader("psql://x:5432/x", 0, OnModuleHashMismatchIgnore, nil, zlog, tracer)
+	loader, err := NewLoader("psql://x:5432/x", 0, 0, 0, OnModuleHashMismatchIgnore, nil, zlog, tracer)
 	if err != nil {
 		panic(err)
 	}

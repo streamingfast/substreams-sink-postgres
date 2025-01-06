@@ -57,13 +57,15 @@ func extractSinkConfig(pkg *pbsubstreams.Package) (*pbsql.Service, error) {
 func newDBLoader(
 	cmd *cobra.Command,
 	psqlDSN string,
-	flushInterval time.Duration,
+	batchBlockFlushInterval int,
+	batchRowFlushInterval int,
+	liveBlockFlushInterval int,
 	handleReorgs bool,
 ) (*db.Loader, error) {
 	moduleMismatchMode, err := db.ParseOnModuleHashMismatch(sflags.MustGetString(cmd, onModuleHashMistmatchFlag))
 	cli.NoError(err, "invalid mistmatch mode")
 
-	dbLoader, err := db.NewLoader(psqlDSN, flushInterval, moduleMismatchMode, &handleReorgs, zlog, tracer)
+	dbLoader, err := db.NewLoader(psqlDSN, batchBlockFlushInterval, batchRowFlushInterval, liveBlockFlushInterval, moduleMismatchMode, &handleReorgs, zlog, tracer)
 	if err != nil {
 		return nil, fmt.Errorf("new psql loader: %w", err)
 	}

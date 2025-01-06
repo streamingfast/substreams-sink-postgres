@@ -28,7 +28,10 @@ var sinkRunCmd = Command(sinkRunE,
 		AddCommonSinkerFlags(flags)
 
 		flags.Int("undo-buffer-size", 0, "If non-zero, handling of reorgs in the database is disabled. Instead, a buffer is introduced to only process a blocks once it has been confirmed by that many blocks, introducing a latency but slightly reducing the load on the database when close to head.")
-		flags.Int("flush-interval", 1000, "When in catch up mode, flush every N blocks")
+		flags.Int("batch-block-flush-interval", 1_000, "When in catch up mode, flush every N blocks or after batch-row-flush-interval, whichever comes first. Set to 0 to disable and only use batch-row-flush-interval. Ineffective if the sink is now in the live portion of the chain where only 'live-block-flush-interval' applies.")
+		flags.Int("batch-row-flush-interval", 100_000, "When in catch up mode, flush every N rows or after batch-block-flush-interval, whichever comes first. Set to 0 to disable and only use batch-block-flush-interval. Ineffective if the sink is now in the live portion of the chain where only 'live-block-flush-interval' applies.")
+		flags.Int("live-block-flush-interval", 1, "When processing in live mode, flush every N blocks.")
+		flags.Int("flush-interval", 0, "(deprecated) please use --batch-block-flush-interval instead")
 		flags.StringP("endpoint", "e", "", "Specify the substreams endpoint, ex: `mainnet.eth.streamingfast.io:443`")
 	}),
 	Example("substreams-sink-sql run 'postgres://localhost:5432/posgres?sslmode=disable' uniswap-v3@v0.2.10"),
@@ -85,7 +88,12 @@ func sinkRunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("new base sinker: %w", err)
 	}
 
-	dbLoader, err := newDBLoader(cmd, dsn, sflags.MustGetDuration(cmd, "flush-interval"), handleReorgs)
+	batchBlockFlushInterval := sflags.MustGetInt(cmd, "batch-block-flush-interval")
+	if sflags.MustGetInt(cmd, "flush-interval") != 0 {
+		batchBlockFlushInterval = sflags.MustGetInt(cmd, "flush-interval")
+	}
+
+	dbLoader, err := newDBLoader(cmd, dsn, batchBlockFlushInterval, sflags.MustGetInt(cmd, "batch-row-flush-interval"), sflags.MustGetInt(cmd, "live-block-flush-interval"), handleReorgs)
 	if err != nil {
 		return fmt.Errorf("new db loader: %w", err)
 	}

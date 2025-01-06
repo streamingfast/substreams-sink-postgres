@@ -45,7 +45,7 @@ func createUserE(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := retry(ctx, func(ctx context.Context) error {
-		dbLoader, err := db.NewLoader(dsn, 0, db.OnModuleHashMismatchError, nil, zlog, tracer)
+		dbLoader, err := db.NewLoader(dsn, 0, 0, 0, db.OnModuleHashMismatchError, nil, zlog, tracer)
 		if err != nil {
 			return fmt.Errorf("new psql loader: %w", err)
 		}
