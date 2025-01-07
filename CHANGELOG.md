@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+* Fixed: flush remaining rows on terminating. If you previously loaded historic data that didn't match the flush interval for the stop block, you might be missing data.
+
 ## v4.5.0
 
 * Added more flags to configure flushing intervals.

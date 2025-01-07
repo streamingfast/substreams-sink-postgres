@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/streamingfast/logging"
@@ -27,6 +28,10 @@ type SQLSinker struct {
 	logger *zap.Logger
 	tracer logging.Tracer
 
+	lastSeenCursor     *sink.Cursor
+	lastSeenFinalBlock uint64
+	flushMutex         *sync.Mutex
+
 	stats *Stats
 }
 
@@ -38,6 +43,8 @@ func New(sink *sink.Sinker, loader *db.Loader, logger *zap.Logger, tracer loggin
 		loader: loader,
 		logger: logger,
 		tracer: tracer,
+
+		flushMutex: &sync.Mutex{},
 
 		stats: NewStats(logger),
 	}, nil
@@ -65,14 +72,19 @@ func (s *SQLSinker) Run(ctx context.Context) {
 		}
 	}
 
-	s.Sinker.OnTerminating(s.Shutdown)
-	s.OnTerminating(func(err error) {
+	s.Sinker.OnTerminating(func(err error) {
+		if err == nil {
+			s.logger.Info("sql sinker terminating, flushing remaining rows")
+			err = s.flush(ctx)
+		}
 		s.stats.LogNow()
-		s.logger.Info("sql sinker terminating", zap.Stringer("last_block_written", s.stats.lastBlock))
-		s.Sinker.Shutdown(err)
+		s.logger.Info("sql sinker terminated", zap.Stringer("last_block_written", s.stats.lastBlock), zap.Error(err))
+		s.Shutdown(err)
 	})
-
-	s.OnTerminating(func(_ error) { s.stats.Close() })
+	s.OnTerminating(func(err error) {
+		s.Sinker.Shutdown(err)
+		s.stats.Close()
+	})
 	s.stats.OnTerminated(func(err error) { s.Shutdown(err) })
 
 	logEach := 15 * time.Second
@@ -113,10 +125,17 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 			return fmt.Errorf("unmarshal database changes: %w", err)
 		}
 
-		if err := s.applyDatabaseChanges(dbChanges, data.Clock.Number, data.FinalBlockHeight); err != nil {
+		// We lock here to ensure that blocks are always fully processed and state is updated before any flush can happen.
+	s.flushMutex.Lock()
+	if err := s.applyDatabaseChanges(dbChanges, data.Clock.Number, data.FinalBlockHeight); err != nil {
+		s.flushMutex.Unlock()
 			return fmt.Errorf("apply database changes: %w", err)
 		}
 	}
+
+	s.lastSeenCursor = cursor
+	s.lastSeenFinalBlock = data.FinalBlockHeight
+	s.flushMutex.Unlock()
 
 	if (s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0) || s.loader.FlushNeeded() {
 		s.logger.Debug("flushing to database",
@@ -125,30 +144,44 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 			zap.Bool("block_flush_interval_reached", s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0),
 			zap.Bool("row_flush_interval_reached", s.loader.FlushNeeded()),
 		)
-
-		flushStart := time.Now()
-		rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), cursor, data.FinalBlockHeight)
-		if err != nil {
-			return fmt.Errorf("failed to flush at block %s: %w", cursor.Block(), err)
-		}
-
-		flushDuration := time.Since(flushStart)
-		if flushDuration > 5*time.Second {
-			level := zap.InfoLevel
-			if flushDuration > 30*time.Second {
-				level = zap.WarnLevel
-			}
-
-			s.logger.Check(level, "flush to database took a long time to complete, could cause long sync time along the road").Write(zap.Duration("took", flushDuration))
-		}
-
-		FlushCount.Inc()
-		FlushedRowsCount.AddInt(rowFlushedCount)
-		FlushDuration.AddInt64(flushDuration.Nanoseconds())
-
-		s.stats.RecordBlock(cursor.Block())
-		s.stats.RecordFlushDuration(flushDuration)
+		return s.flush(ctx)
 	}
+
+	return nil
+}
+
+func (s *SQLSinker) flush(ctx context.Context) error {
+
+	// we haven't received any data yet, so nothing to do here
+	if s.lastSeenCursor == nil {
+		return nil
+	}
+
+	s.flushMutex.Lock()
+	defer s.flushMutex.Unlock()
+
+	flushStart := time.Now()
+	rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), s.lastSeenCursor, s.lastSeenFinalBlock)
+	if err != nil {
+		return fmt.Errorf("failed to flush at block %s: %w", s.lastSeenCursor.Block(), err)
+	}
+
+	flushDuration := time.Since(flushStart)
+	if flushDuration > 5*time.Second {
+		level := zap.InfoLevel
+		if flushDuration > 30*time.Second {
+			level = zap.WarnLevel
+		}
+
+		s.logger.Check(level, "flush to database took a long time to complete, could cause long sync time along the road").Write(zap.Duration("took", flushDuration))
+	}
+
+	FlushCount.Inc()
+	FlushedRowsCount.AddInt(rowFlushedCount)
+	FlushDuration.AddInt64(flushDuration.Nanoseconds())
+
+	s.stats.RecordBlock(s.lastSeenCursor.Block())
+	s.stats.RecordFlushDuration(flushDuration)
 
 	return nil
 }
