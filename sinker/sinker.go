@@ -81,9 +81,10 @@ func (s *SQLSinker) Run(ctx context.Context) {
 		s.logger.Info("sql sinker terminated", zap.Stringer("last_block_written", s.stats.lastBlock), zap.Error(err))
 		s.Shutdown(err)
 	})
-	s.OnTerminating(s.Sinker.Shutdown)
-
-	s.stats.OnTerminating(func(_ error) { s.stats.Close() })
+	s.OnTerminating(func(err error) {
+		s.Sinker.Shutdown(err)
+		s.stats.Close()
+	})
 	s.stats.OnTerminated(func(err error) { s.Shutdown(err) })
 
 	logEach := 15 * time.Second
