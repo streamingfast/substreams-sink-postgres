@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/streamingfast/logging"
@@ -29,6 +30,7 @@ type SQLSinker struct {
 
 	lastSeenCursor     *sink.Cursor
 	lastSeenFinalBlock uint64
+	flushMutex         *sync.Mutex
 
 	stats *Stats
 }
@@ -41,6 +43,8 @@ func New(sink *sink.Sinker, loader *db.Loader, logger *zap.Logger, tracer loggin
 		loader: loader,
 		logger: logger,
 		tracer: tracer,
+
+		flushMutex: &sync.Mutex{},
 
 		stats: NewStats(logger),
 	}, nil
@@ -120,13 +124,17 @@ func (s *SQLSinker) HandleBlockScopedData(ctx context.Context, data *pbsubstream
 			return fmt.Errorf("unmarshal database changes: %w", err)
 		}
 
-		if err := s.applyDatabaseChanges(dbChanges, data.Clock.Number, data.FinalBlockHeight); err != nil {
+		// We lock here to ensure that blocks are always fully processed and state is updated before any flush can happen.
+	s.flushMutex.Lock()
+	if err := s.applyDatabaseChanges(dbChanges, data.Clock.Number, data.FinalBlockHeight); err != nil {
+		s.flushMutex.Unlock()
 			return fmt.Errorf("apply database changes: %w", err)
 		}
 	}
 
 	s.lastSeenCursor = cursor
 	s.lastSeenFinalBlock = data.FinalBlockHeight
+	s.flushMutex.Unlock()
 
 	if (s.batchBlockModulo(isLive) > 0 && data.Clock.Number%s.batchBlockModulo(isLive) == 0) || s.loader.FlushNeeded() {
 		s.logger.Debug("flushing to database",
@@ -147,6 +155,9 @@ func (s *SQLSinker) flush(ctx context.Context) error {
 	if s.lastSeenCursor == nil {
 		return nil
 	}
+
+	s.flushMutex.Lock()
+	defer s.flushMutex.Unlock()
 
 	flushStart := time.Now()
 	rowFlushedCount, err := s.loader.Flush(ctx, s.OutputModuleHash(), s.lastSeenCursor, s.lastSeenFinalBlock)
